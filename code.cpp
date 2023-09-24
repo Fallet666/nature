@@ -1,12 +1,12 @@
-//2.0 version with chasem, sick, infinite and Predator Herbs
+//2.0 version with chase, sick, infinite and Predator Herbs
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include <vector>
 #include <random>
-#include <unistd.h> //for macos or linux. if you use them, you don’t have to change the code)))
-/*if you want to use it on Windows, remove the comment from here (include <windows.h> and void clear())
-and comment #include <unistd.h> and void clear() below*/
-/*#include <windows.h>
+#include <unistd.h> //для unix
+#include <cstdlib>
+/* Если сильно хочется clear на винде, то надо раскомментить это и убрать прошлый clear() ниже
+#include <windows.h>
 void clear() {
     COORD topLeft  = { 0, 0 };
     HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -25,20 +25,21 @@ void clear() {
 }*/
 using namespace std;
 const int xl=101,yl=20; //размер
-const int pymin=10,pymax=40,hymin=10,hymax=30; //границы возраста
+const int pymin=10,pymax=20,hymin=10,hymax=20; //границы возраста
 const int pEat=2,hEat=2,EatCount=5; //еда сичтается за EatCount ходов, pEat и hEat - коэфициенты еды, нужной для жизни
 const int nP=50; //начальное количество хищников
 const int nH=50; //начальное кол-во травоядных
-const int hChild=2, pChild=2; //сколько еды нужно, чтобы родить ребенка
-const int hReproduce[2]={2,10},pReproduce[2]={4,6}; //репродуктивные границы
-const int hMaxChild=2,pMaxChild=4; //максимальное количество детей за 1 раз
+const int hChild=2, pChild=3; //сколько еды нужно, чтобы родить ребенка
+const int hReproduce[2]={3,6},pReproduce[2]={4,10}; //репродуктивные границы
+const int hMaxChild=2,pMaxChild=2; //максимальное количество детей за 1 раз
 const int pMaxPopulation=50000, hMaxPopulation=50000; //ограничение максимального количества объектов для программы
 const int nTrava=300; // кол-во травы;
 const int tPercent=50; //процент восстановления травы за 1 ход
-const int nFire=5; //кол-во пожаров за ход
-const int MeteoriteChance=100000; //шанс метеорита 1/n
-const int pSickChance=20, hSickChance=50; //шанс заболеть 1/n
+const int nFire=1; //кол-во пожаров за ход
+const int MeteoriteChance=10000; //шанс метеорита 1/n
+const int pSickChance=100, hSickChance=50; //шанс заболеть 1/n
 const int phN=10;
+
 
 int ym(int y,int r){
     if(r==0){
@@ -80,7 +81,7 @@ public:
 };
 class Predator{
 public:
-    int x=rand()%xl,y=rand()%yl,year, maxyear=(random())%(pymax-pymin)+pymin,child=0,bufcount=0;
+    int x=rand()%xl,y=rand()%yl,year{}, maxyear=(random())%(pymax-pymin)+pymin,child=0,bufcount=0;
     vector<int> food={0,0};
     vector < vector <int> > buf={{}};
     bool dead = false,sick=false;
@@ -115,12 +116,19 @@ public:
     void move(){
         int bufx=-1, bufy=-1;
         year++;
-        float smin=1000000;
+        float smin=1000000,s;
         for(int i=1;i<bufcount;i++){
-            float s=sqrt(pow(x-buf[i][0],2)+pow(y-buf[i][1],2));
-            if(s<smin){
+            try{
+                s=sqrt(pow(x-buf[i][0],2)+pow(y-buf[i][1],2));}
+            catch (...){
+                s=1000;
+            }
+            if(s<smin and s!=NULL){
+                //cout<<s<<endl;
+                smin=s;
                 bufx=buf[i][0];
                 bufy=buf[i][1];
+
             }
         }
         if(bufx==-1 || smin==0){
@@ -131,12 +139,12 @@ public:
         } else {
             if(bufx>x)
                 x++;
-            else
+            else if(bufx<x)
                 x--;
 
             if(bufy>y)
                 y++;
-            else
+            else if(bufy<y)
                 y--;
         }
         buf={{}};
@@ -147,9 +155,9 @@ public:
             if( abs(x-xz)<=1 && abs(y-yz)<=1){
                 food.push_back(0);
                 return true;
-            }
-            return false;
-        }}
+            }}
+        return false;
+    }
 };
 class Herbivore{
 public:
@@ -191,13 +199,21 @@ public:
     void move(){
         int bufx=-1, bufy=-1;
         year++;
-        float smin=1000000;
-        for(int i=1;i<bufcount;i++){
-            float s=sqrt(pow(x-buf[i][0],2)+pow(y-buf[i][1],2));
+        float smin=1000000,s;
+        for(int i=1;i<bufcount-1;i++){
+            try{
+            s=sqrt(pow(x-buf[i][0],2)+pow(y-buf[i][1],2));}
+            catch (...){
+                s=1000;
+            }
             if(s<smin){
+                //cout<<s<<endl;
+                smin=s;
                 bufx=buf[i][0];
                 bufy=buf[i][1];
+
             }
+
         }
         if(bufx==-1 || smin==0){
             int r=xm(x)-x;
@@ -207,12 +223,12 @@ public:
         } else {
             if(bufx>x)
                 x++;
-            else
+            else if(bufx<x)
                 x--;
 
             if(bufy>y)
                 y++;
-            else
+            else if(bufy<y)
                 y--;
         }
         buf={{}};
@@ -224,8 +240,9 @@ public:
             if(x==xz and y==yz){
                 food.push_back(0);
                 return true;
-            } return false;
-        }
+            }}
+        return false;
+
     }
 
 };
@@ -248,7 +265,7 @@ public:
     int x=rand()%xl,y=rand()%yl;
 };
 
-void clear() {
+void clear() {cout<<"\n\n\n\n\n\n\n\n\n\n";
     cout << "\x1B[2J\x1B[H";
 }
 void the_end(int count){
@@ -431,9 +448,9 @@ int main() {
             cout << "Predators:" << pcount << "  Herbivore:" << hcount << "  Trava rec:" << tcount1
                  << "  Trava not rec:" << tcount2 << "  Step:" << mainCount << endl;
             if (pcount == 0)
-                n += 20;
+                n += 50;
             if (hcount == 0)
-                n1 += 20;
+                n1 += 50;
             sleep(1);
             clear();
         }
